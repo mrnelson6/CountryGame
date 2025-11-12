@@ -80,6 +80,13 @@
       <div class="pill"><div class="bar" id="bar"></div></div>
       <div class="legend">✔ Correct turns green • ★ Highlighted glows softly</div>
 
+      <div class="controls" style="align-items:center">
+        <label style="display:flex;gap:8px;align-items:center">
+          <input id="autoZoomChk" type="checkbox" checked />
+          Auto-zoom to country
+        </label>
+      </div>
+
       <form id="form" class="controls" autocomplete="off">
         <div class="suggest-box" style="flex:1">
           <input id="guess" type="text" placeholder="Type country name…" />
@@ -173,7 +180,7 @@
 
     // UN ISO3 set (193 + 2 observers)
     const UN_ISO3 = new Set([
-      "AFG","ALB","DZA","AND","AGO","ATG","ARG","ARM","AUS","AUT","AZE","BHS","BHR","BGD","BRB","BLR","BEL","BLZ","BEN","BTN","BOL","BIH","BWA","BRA","BRN","BGR","BFA","BDI","CPV","KHM","CMR","CAN","CAF","TCD","CHL","CHN","COL","COM","COG","COD","CRI","CIV","HRV","CUB","CYP","CZE","DNK","DJI","DMA","DOM","ECU","EGY","SLV","GNQ","ERI","EST","SWZ","ETH","FJI","FIN","FRA","GAB","GMB","GEO","DEU","GHA","GRC","GRD","GTM","GIN","GNB","GUY","HTI","HND","HUN","ISL","IND","IDN","IRN","IRQ","IRL","ISR","ITA","JAM","JPN","JOR","KAZ","KEN","KIR","KWT","KGZ","LAO","LVA","LBN","LSO","LBR","LBY","LIE","LTU","LUX","MDG","MWI","MYS","MDV","MLI","MLT","MHL","MRT","MUS","MEX","FSM","MDA","MCO","MNG","MNE","MAR","MOZ","MMR","NAM","NRU","NPL","NLD","NZL","NIC","NER","NGA","PRK","MKD","NOR","OMN","PAK","PLW","PAN","PNG","PRY","PER","PHL","POL","PRT","QAT","ROU","RUS","RWA","KNA","LCA","VCT","WSM","SMR","STP","SAU","SEN","SRB","SYC","SLE","SGP","SVK","SVN","SLB","SOM","ZAF","KOR","SSD","ESP","LKA","SDN","SUR","SWE","CHE","SYR","TJK","TZA","THA","TLS","TGO","TON","TTO","TUN","TUR","TKM","TUV","UGA","UKR","ARE","GBR","USA","URY","UZB","VUT","VEN","VNM","YEM","ZMB","ZWE","VAT","PSE"
+      "AFG","ALB","DZA","AND","AGO","ATG","ARG","ARM","AUS","AUT","AZE","BHS","BHR","BGD","BRB","BLR","BEL","BLZ","BEN","BTN","BOL","BIH","BWA","BRA","BRN","BGR","BFA","BDI","CPV","KHM","CMR","CAN","CAF","TCD","CHL","CHN","COL","COM","COG","COD","CRI","CIV","HRV","CUB","CYP","CZE","DNK","DJI","DMA","DOM","ECU","EGY","SLV","GNQ","ERI","EST","SWZ","ETH","FJI","FIN","FRA","GAB","GMB","GEO","DEU","GHA","GRC","GRD","GTM","GIN","GNB","GUY","HTI","HND","HUN","ISL","IND","IDN","IRN","IRQ","IRL","ISR","ITA","JAM","JPN","JOR","KAZ","KEN","KIR","KOS","KWT","KGZ","LAO","LVA","LBN","LSO","LBR","LBY","LIE","LTU","LUX","MDG","MWI","MYS","MDV","MLI","MLT","MHL","MRT","MUS","MEX","FSM","MDA","MCO","MNG","MNE","MAR","MOZ","MMR","NAM","NRU","NPL","NLD","NZL","NIC","NER","NGA","PRK","MKD","NOR","OMN","PAK","PLW","PAN","PNG","PRY","PER","PHL","POL","PRT","QAT","ROU","RUS","RWA","KNA","LCA","VCT","WSM","SMR","STP","SAU","SEN","SRB","SYC","SLE","SGP","SVK","SVN","SLB","SOM","ZAF","KOR","SSD","ESP","LKA","SDN","SUR","SWE","CHE","SYR","TJK","TZA","THA","TLS","TGO","TON","TTO","TUN","TUR","TKM","TUV","UGA","UKR","ARE","GBR","USA","URY","UZB","VUT","VEN","VNM","YEM","ZMB","ZWE","VAT","PSE"
     ]);
 
     const ne = await (await fetch(SHAPES)).json();
@@ -229,6 +236,38 @@
 
     const zoom=d3.zoom().scaleExtent([1,12]).on("zoom",ev=>gMap.attr("transform",ev.transform));
     svg.call(zoom);
+
+    // ---- Auto-zoom toggle (default ON, persisted) ----
+    const autoZoomKey = "autoZoom";
+    let autoZoom = JSON.parse(localStorage.getItem(autoZoomKey) ?? "true");
+    const autoZoomChk = document.getElementById("autoZoomChk");
+    autoZoomChk.checked = autoZoom;
+    autoZoomChk.addEventListener("change", (e) => {
+      autoZoom = e.target.checked;
+      localStorage.setItem(autoZoomKey, JSON.stringify(autoZoom));
+      if (autoZoom) zoomToFeature(currentFeature());
+    });
+
+    // Smoothly zoom/pan to fit a feature
+    function zoomToFeature(f) {
+      if (!f) return;
+      const b = path.bounds(f);
+      const dx = b[1][0] - b[0][0];
+      const dy = b[1][1] - b[0][1];
+      const cx = (b[0][0] + b[1][0]) / 2;
+      const cy = (b[0][1] + b[1][1]) / 2;
+
+      // padding factor so we don’t hug the edges; clamp scale to sane bounds
+      const k = Math.max(1, Math.min(12, 0.88 / Math.max(dx / width, dy / height)));
+
+      const t = d3.zoomIdentity
+        .translate(width / 2, height / 2)
+        .scale(k)
+        .translate(-cx, -cy);
+
+      svg.transition().duration(500).ease(d3.easeCubicOut).call(zoom.transform, t);
+    }
+
     document.getElementById("resetBtn").addEventListener("click",()=>svg.transition().duration(400).call(zoom.transform,d3.zoomIdentity));
 
     // Game state
@@ -302,10 +341,12 @@
       hintBox.textContent = "";
       guessInput.value="";
       updateUI();
+      if (autoZoom) zoomToFeature(currentFeature());
     }
 
     updateUI();
     guessInput.focus();
+    if (autoZoom) zoomToFeature(currentFeature());
 
     // Suggestions
     const suggestBox=document.getElementById("suggest");
@@ -386,10 +427,12 @@
     // Hint / Reveal / Restart
     document.getElementById("hintBtn").addEventListener("click", () => {
       const n = nameOf(currentFeature());
+      score--;
       hintLen = Math.min(hintLen + 1, n.length);
       hintBox.style.display = "block";
       hintBox.textContent = "Hint: " + n.slice(0,hintLen) + "▁".repeat(Math.max(0,n.length-hintLen));
       guessInput.focus();
+      updateUI();
     });
 
     document.getElementById("revealBtn").addEventListener("click", () => {
@@ -397,7 +440,9 @@
       hintBox.style.display = "block";
       hintBox.innerHTML = `Revealed: <strong>${n}</strong>`;
       streak = 0;
+      score-= 5;
       setTimeout(() => next(), 600);
+      updateUI();
     });
 
     document.getElementById("restartBtn").addEventListener("click", () => {
