@@ -130,34 +130,23 @@
   // === Replace with your deployed Apps Script Web App URL (ends with /exec)
   const APP_URL = 'https://script.google.com/macros/s/AKfycbzqGbIm3DpZc3Lfl5LS4eyYBA2yrXgINCz7m0OV6481Xuh90ZNRSWZYSit_RjLlwCnk/exec';
 
-  // Dev/test helper: quick leaderboard submit
+  // Dev helper
   async function testSubmit() {
-    const testName = "Tester";
-    const testScore = Math.floor(Math.random() * 200);
-    const testTime = Math.floor(Math.random() * 500);
     const res = await fetch(APP_URL, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name: testName, score: testScore, time_s: testTime })
+      method: 'POST',
+      body: JSON.stringify({ name: 'Tester', score: 123, time_s: 77 })
     });
-    console.log("Test submission:", await res.json());
+    try { console.log('Test submission result:', await res.json()); } catch { console.log('Submitted'); }
   }
 
   (async function () {
-
-
     async function submitScore(name, score, time_s) {
-      try {
-        const res = await fetch(APP_URL, {
-          method: 'POST',
-          headers: { 'Content-Type':'application/json' },
-          body: JSON.stringify({ name, score, time_s })
-        });
-        return await res.json();
-      } catch (e) {
-        console.warn('Submit failed', e);
-        return { ok:false, error:String(e) };
-      }
+      const res = await fetch(APP_URL, {
+        method: 'POST',
+        // IMPORTANT: no headers here → no preflight
+        body: JSON.stringify({ name, score, time_s })
+      });
+      try { return await res.json(); } catch { return { ok:true }; }
     }
 
     async function loadLeaderboard() {
