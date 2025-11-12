@@ -74,19 +74,6 @@
 
     <!-- UI -->
     <div class="panel">
-      <h1>🌍 Country Guesser — UN Countries</h1>
-      <div class="sub">Scroll to zoom, drag to pan. Exact GeoJSON names, UN set only.</div>
-
-      <div class="pill"><div class="bar" id="bar"></div></div>
-      <div class="legend">✔ Correct turns green • ★ Highlighted glows softly • Incorrect Guess/Hint -1 • Reveal -5</div>
-
-      <div class="controls" style="align-items:center">
-        <label style="display:flex;gap:8px;align-items:center">
-          <input id="autoZoomChk" type="checkbox" checked />
-          Auto-zoom to country
-        </label>
-      </div>
-
       <form id="form" class="controls" autocomplete="off">
         <div class="suggest-box" style="flex:1">
           <input id="guess" type="text" placeholder="Type country name…" />
@@ -94,6 +81,13 @@
         </div>
         <button type="submit">Submit</button>
       </form>
+
+      <div class="controls" style="align-items:center">
+        <label style="display:flex;gap:8px;align-items:center">
+          <input id="autoZoomChk" type="checkbox" checked />
+          Auto-zoom to country
+        </label>
+      </div>
 
       <div class="controls">
         <button id="hintBtn" class="secondary" type="button">Hint</button>
@@ -108,6 +102,12 @@
         <div class="stat"><div class="k">Streak</div><div class="v" id="streakV">0</div></div>
         <div class="stat"><div class="k">Progress</div><div class="v" id="progV">0/0</div></div>
       </div>
+
+      <h1>🌍 Country Guesser — UN Countries</h1>
+      <div class="sub">Scroll to zoom, drag to pan. Exact GeoJSON names, UN set only.</div>
+
+      <div class="pill"><div class="bar" id="bar"></div></div>
+      <div class="legend">✔ Correct turns green • ★ Highlighted glows softly • Incorrect Guess/Hint -1 • Reveal -5</div>
     </div>
   </div>
 
